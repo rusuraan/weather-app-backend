@@ -6,10 +6,10 @@ def get_location_coords(location):
         "https://geocoding-api.open-meteo.com/v1/search",
         params={"name": location, "count": 1}
     ).json()
-    
+
     if "results" not in response:
         return None
-    
+
     result = response["results"][0]
     return {
         "latitude": result["latitude"],
@@ -29,7 +29,7 @@ def get_weather(latitude, longitude):
             "timezone": "GMT"
         }
     ).json()
-    
+
     data = response["hourly"]
     # Return data points every 12 hours
     return [(

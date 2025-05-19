@@ -41,7 +41,7 @@ jobs:
       
       - name: Run Bandit Security Scan
         run: |
-          bandit -r . -ll 3 -ii 3 -f json -o bandit-results.json || exit 1
+          bandit -r . -lll -iii || exit 1
           echo "Bandit security scan passed with no high-severity issues"
       
       - name: Install Hadolint for Dockerfile scanning

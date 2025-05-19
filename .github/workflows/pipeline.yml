@@ -35,6 +35,25 @@ jobs:
         run: |
           pylint --fail-under=8 *.py
 
+      - name: Install Bandit
+        run: |
+          pip install bandit
+      
+      - name: Run Bandit Security Scan
+        run: |
+          bandit -r . -ll 3 -ii 3 -f json -o bandit-results.json || exit 1
+          echo "Bandit security scan passed with no high-severity issues"
+      
+      - name: Install Hadolint for Dockerfile scanning
+        run: |
+          wget -O /tmp/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x /tmp/hadolint
+          sudo mv /tmp/hadolint /usr/local/bin/
+      
+      - name: Scan Dockerfile
+        run: |
+          hadolint --failure-threshold error Dockerfile    
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.10
 

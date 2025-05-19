@@ -84,7 +84,7 @@ jobs:
 
       - name: Run container for smoke test
         run: |
-          docker run -d -p 5000:5000 --name app-container:${{  github.sha }}
+          docker run -d -p 5000:5000 --name app-container local-image:${{  github.sha }}
           sleep 10
 
       - name: Log in to the Container registry

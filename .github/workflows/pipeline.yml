@@ -1,5 +1,4 @@
 name: Build and Publish Backend Image
-
 on:
   push:
     branches: [ main ]
@@ -7,26 +6,21 @@ on:
       - 'v*'
   pull_request:
     branches: [ main ]
-
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}-backend
 
 jobs:
-  build-and-push:
+  pylint:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+      
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
-
+      
       - name: Install Pylint
         run: |
           pip install pylint
@@ -35,6 +29,16 @@ jobs:
         run: |
           pylint --fail-under=8 *.py
 
+  bandit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+      
       - name: Install Bandit
         run: |
           pip install bandit
@@ -43,6 +47,12 @@ jobs:
         run: |
           bandit -r . -lll -iii || exit 1
           echo "Bandit security scan passed with no high-severity issues"
+
+  dockerfile-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
       
       - name: Install Hadolint for Dockerfile scanning
         run: |
@@ -52,18 +62,28 @@ jobs:
       
       - name: Scan Dockerfile
         run: |
-          hadolint --failure-threshold error Dockerfile    
+          hadolint --failure-threshold error Dockerfile
 
+  build-and-push:
+    needs: [pylint, bandit, dockerfile-scan]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.10
-
+      
       - name: Log in to the Container registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
+      
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v4
@@ -75,7 +95,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha
-            
+      
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
@@ -85,3 +105,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          
